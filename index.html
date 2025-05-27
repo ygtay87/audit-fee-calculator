@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Audit Fee Calculator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #fdf6f0;
+            color: #3e4a61;
+            text-align: center;
+        }
+        h1 {
+            font-family: 'Goudy Old Style', serif;
+            font-size: 32px;
+            color: #607d8b;
+            margin: 0;
+        }
+        .af-code {
+            font-size: 13px;
+            color: #607d8b;
+            margin-bottom: 10px;
+        }
+        .input-block {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px auto;
+            max-width: 480px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: left;
+        }
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+        input[type="number"] {
+            padding: 10px;
+            width: 95%;
+            font-size: 14px;
+            margin-bottom: 5px;
+            border: 1px solid #b0bec5;
+            border-radius: 4px;
+            background-color: #f1f8e9;
+        }
+        .output {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #33691e;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            background-color: #aed581;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #9ccc65;
+        }
+        .average-output {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>Clement Kong & Co</h1>
+    <div class="af-code">AF002433</div>
+
+    <div class="input-block">
+        <label for="assets">Total Assets (MYR):</label>
+        <input type="number" id="assets" placeholder="Enter total assets">
+        <div class="output" id="feeAssets">Audit Fees: RM -</div>
+
+        <label for="turnover">Turnover (MYR):</label>
+        <input type="number" id="turnover" placeholder="Enter turnover">
+        <div class="output" id="feeTurnover">Audit Fees: RM -</div>
+
+        <label for="opex">Total Operating Expenses (MYR):</label>
+        <input type="number" id="opex" placeholder="Enter operating expenses">
+        <div class="output" id="feeOpex">Audit Fees: RM -</div>
+
+        <button onclick="calculateFees()">Calculate</button>
+        <button onclick="resetCalculator()" style="margin-top:10px; background-color:#ef9a9a;">Reset</button>
+
+        <div class="average-output" id="averageFee">Average Audit Fees based on Total Assets and Turnover: RM -</div>
+    </div>
+
+    <script>
+        function formatNumber(num) {
+            return num.toLocaleString('en-MY');
+        }
+
+        function calculateTieredFee(input) {
+            const brackets = [
+                { limit: 100000, rate: 0.01 },
+                { limit: 150000, rate: 0.00438 },
+                { limit: 250000, rate: 0.00313 },
+                { limit: 500000, rate: 0.00188 },
+                { limit: 1500000, rate: 0.00125 },
+                { limit: 2500000, rate: 0.00100 },
+                { limit: 5000000, rate: 0.00094 }
+            ];
+
+            let remaining = input;
+            let fee = 0;
+
+            for (let i = 0; i < brackets.length; i++) {
+                if (remaining <= 0) break;
+                const slab = brackets[i];
+                const applicable = Math.min(remaining, slab.limit);
+                fee += applicable * slab.rate;
+                remaining -= applicable;
+            }
+
+            if (input > 10000000 && input <= 20000000) {
+                let additional = input - 10000000;
+                let millions = Math.ceil(additional / 1000000);
+                fee += millions * 1000;
+            }
+
+            if (input > 20000000) {
+                return "should not be less than RM 20,000 for this engagement";
+            }
+
+            fee = Math.ceil(fee / 100) * 100;
+            return Math.max(fee, 1000);
+        }
+
+        function calculateOpexFee(opex) {
+            let remaining = opex;
+            let fee = 0;
+            const opexBrackets = [
+                { limit: 50000, rate: 0.025 },
+                { limit: 150000, rate: 0.0125 },
+                { limit: 800000, rate: 0.00625 },
+                { limit: 1000000, rate: 0.0025 }
+            ];
+
+            for (let i = 0; i < opexBrackets.length; i++) {
+                if (remaining <= 0) break;
+                const slab = opexBrackets[i];
+                const applicable = Math.min(remaining, slab.limit);
+                fee += applicable * slab.rate;
+                remaining -= applicable;
+            }
+
+            if (remaining > 0) {
+                fee += remaining * 0.00125;
+            }
+
+            return Math.ceil(fee / 100) * 100;
+        }
+
+        function calculateFees() {
+            const assets = parseFloat(document.getElementById("assets").value);
+            const turnover = parseFloat(document.getElementById("turnover").value);
+            const opex = parseFloat(document.getElementById("opex").value);
+
+            let feeAssets = "-", feeTurnover = "-", feeOpex = "-", averageFee = "-";
+
+            if (!isNaN(assets) && assets > 0) {
+                feeAssets = calculateTieredFee(assets);
+                document.getElementById("feeAssets").innerText = "Audit Fees: RM " + (typeof feeAssets === 'number' ? formatNumber(feeAssets) : feeAssets);
+            }
+
+            if (!isNaN(turnover) && turnover > 0) {
+                feeTurnover = calculateTieredFee(turnover);
+                document.getElementById("feeTurnover").innerText = "Audit Fees: RM " + (typeof feeTurnover === 'number' ? formatNumber(feeTurnover) : feeTurnover);
+            }
+
+            if (!isNaN(opex) && opex > 0) {
+                feeOpex = calculateOpexFee(opex);
+                document.getElementById("feeOpex").innerText = "Audit Fees: RM " + formatNumber(feeOpex);
+            }
+
+            if (typeof feeAssets === 'number' && typeof feeTurnover === 'number') {
+                averageFee = Math.ceil(((feeAssets + feeTurnover) / 2) / 100) * 100;
+                document.getElementById("averageFee").innerText = "Average Audit Fees based on Total Assets and Turnover: RM " + formatNumber(averageFee);
+            } else if (feeAssets === "should not be less than RM 20,000 for this engagement" || feeTurnover === "should not be less than RM 20,000 for this engagement") {
+                document.getElementById("averageFee").innerText = "Average Audit Fees based on Total Assets and Turnover: should not be less than RM 20,000 for this engagement";
+            } else {
+                document.getElementById("averageFee").innerText = "Average Audit Fees based on Total Assets and Turnover: RM -";
+            }
+        }
+    
+        function resetCalculator() {
+            document.getElementById("assets").value = "";
+            document.getElementById("turnover").value = "";
+            document.getElementById("opex").value = "";
+            document.getElementById("feeAssets").innerText = "Audit Fees: RM -";
+            document.getElementById("feeTurnover").innerText = "Audit Fees: RM -";
+            document.getElementById("feeOpex").innerText = "Audit Fees: RM -";
+            document.getElementById("averageFee").innerText = "Average Audit Fees based on Total Assets and Turnover: RM -";
+        }
+    </script>
+
+</body>
+</html>
